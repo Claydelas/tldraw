@@ -158,10 +158,6 @@ export class SelectTool extends BaseTool<Status> {
         point,
       }
 
-      if (clone.type === TDShapeType.Sticky) {
-        clone.text = ''
-      }
-
       return clone
     }
 
@@ -198,10 +194,6 @@ export class SelectTool extends BaseTool<Status> {
           if (clonedShape) {
             this.app.createShapes(clonedShape)
             this.setStatus(Status.Idle)
-            if (clonedShape.type === TDShapeType.Sticky) {
-              this.app.select(clonedShape.id)
-              this.app.setEditingId(clonedShape.id)
-            }
           }
         }
         break

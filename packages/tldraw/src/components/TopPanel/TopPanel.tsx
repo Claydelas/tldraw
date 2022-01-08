@@ -25,7 +25,6 @@ export function TopPanel({
   showMenu,
   showStyles,
   showZoom,
-  showSponsorLink,
 }: TopPanelProps) {
   const app = useTldrawApp()
 
@@ -33,7 +32,7 @@ export function TopPanel({
     <StyledTopPanel>
       {(showMenu || showPages) && (
         <Panel side="left">
-          {showMenu && <Menu showSponsorLink={showSponsorLink} readOnly={readOnly} />}
+          {showMenu && <Menu readOnly={readOnly} />}
           {showPages && <PageMenu />}
         </Panel>
       )}

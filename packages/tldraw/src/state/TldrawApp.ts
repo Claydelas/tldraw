@@ -71,7 +71,6 @@ import { RectangleTool } from './tools/RectangleTool'
 import { TriangleTool } from './tools/TriangleTool'
 import { LineTool } from './tools/LineTool'
 import { ArrowTool } from './tools/ArrowTool'
-import { StickyTool } from './tools/StickyTool'
 import { StateManager } from './StateManager'
 
 const uuid = Utils.uniqueId()
@@ -163,7 +162,6 @@ export class TldrawApp extends StateManager<TDSnapshot> {
     [TDShapeType.Triangle]: new TriangleTool(this),
     [TDShapeType.Line]: new LineTool(this),
     [TDShapeType.Arrow]: new ArrowTool(this),
-    [TDShapeType.Sticky]: new StickyTool(this),
   }
 
   currentTool: BaseTool = this.tools.select

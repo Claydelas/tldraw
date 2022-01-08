@@ -4,7 +4,6 @@ import { TriangleUtil } from './TriangleUtil'
 import { EllipseUtil } from './EllipseUtil'
 import { ArrowUtil } from './ArrowUtil'
 import { GroupUtil } from './GroupUtil'
-import { StickyUtil } from './StickyUtil'
 import { TextUtil } from './TextUtil'
 import { DrawUtil } from './DrawUtil'
 import { ImageUtil } from './ImageUtil'
@@ -18,7 +17,6 @@ export const Draw = new DrawUtil()
 export const Arrow = new ArrowUtil()
 export const Text = new TextUtil()
 export const Group = new GroupUtil()
-export const Sticky = new StickyUtil()
 export const Image = new ImageUtil()
 export const Video = new VideoUtil()
 
@@ -30,7 +28,6 @@ export const shapeUtils = {
   [TDShapeType.Arrow]: Arrow,
   [TDShapeType.Text]: Text,
   [TDShapeType.Group]: Group,
-  [TDShapeType.Sticky]: Sticky,
   [TDShapeType.Image]: Image,
   [TDShapeType.Video]: Video,
 }

@@ -174,9 +174,9 @@ export function Tldraw({
   currentPageId,
   autofocus = true,
   showMenu = true,
-  showPages = true,
+  showPages = false,
   showTools = true,
-  showZoom = true,
+  showZoom = false,
   showStyles = true,
   showUI = true,
   readOnly = false,
@@ -463,11 +463,6 @@ const InnerTldraw = React.memo(function InnerTldraw({
           hideRotateHandles={!settings.showRotateHandles}
           hideGrid={!settings.showGrid}
           performanceMode={app.session?.performanceMode}
-          onPinchStart={app.onPinchStart}
-          onPinchEnd={app.onPinchEnd}
-          onPinch={app.onPinch}
-          onPan={app.onPan}
-          onZoom={app.onZoom}
           onPointerDown={app.onPointerDown}
           onPointerMove={app.onPointerMove}
           onPointerUp={app.onPointerUp}

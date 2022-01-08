@@ -3,7 +3,6 @@ import {
   ArrowTopRightIcon,
   CursorArrowIcon,
   Pencil1Icon,
-  Pencil2Icon,
   TextIcon,
 } from '@radix-ui/react-icons'
 import { TDSnapshot, TDShapeType } from '~types'
@@ -41,10 +40,6 @@ export const PrimaryTools = React.memo(function PrimaryTools(): JSX.Element {
 
   const selectTextTool = React.useCallback(() => {
     app.selectTool(TDShapeType.Text)
-  }, [app])
-
-  const selectStickyTool = React.useCallback(() => {
-    app.selectTool(TDShapeType.Sticky)
   }, [app])
 
   return (
@@ -91,14 +86,6 @@ export const PrimaryTools = React.memo(function PrimaryTools(): JSX.Element {
         isActive={activeTool === TDShapeType.Text}
       >
         <TextIcon />
-      </ToolButtonWithTooltip>
-      <ToolButtonWithTooltip
-        kbd={'0'}
-        label={TDShapeType.Sticky}
-        onClick={selectStickyTool}
-        isActive={activeTool === TDShapeType.Sticky}
-      >
-        <Pencil2Icon />
       </ToolButtonWithTooltip>
     </Panel>
   )

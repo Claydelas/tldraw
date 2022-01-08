@@ -1,11 +1,14 @@
 {
-  "name": "@tldraw/tldraw",
+  "name": "@claydelas/tldraw",
   "version": "1.4.3",
   "description": "A tiny little drawing app (editor)",
   "author": "@steveruizok",
   "repository": {
     "type": "git",
-    "url": "https://github.com/tldraw/tldraw.git"
+    "url": "https://github.com/Claydelas/tldraw.git"
+  },
+  "publishConfig": {
+    "registry":"https://npm.pkg.github.com"
   },
   "license": "MIT",
   "keywords": [

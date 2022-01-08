@@ -247,12 +247,6 @@ export class GridSession extends BaseSession {
       point,
     }
 
-    if (!copy) {
-      if (clone.type === TDShapeType.Sticky) {
-        clone.text = ''
-      }
-    }
-
     return clone
   }
 }

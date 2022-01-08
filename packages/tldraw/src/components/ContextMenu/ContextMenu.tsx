@@ -184,7 +184,6 @@ const InnerMenu = React.memo(function InnerMenu({ onBlur }: InnerContextMenuProp
                 To Back
               </CMRowButton>
             </ContextMenuSubMenu>
-            <MoveToPageMenu />
             {hasTwoOrMore && (
               <AlignDistributeSubMenu hasTwoOrMore={hasTwoOrMore} hasThreeOrMore={hasThreeOrMore} />
             )}
@@ -334,43 +333,6 @@ const StyledGridContent = styled(MenuContent, {
     },
   },
 })
-
-/* -------------- Move to Page Sub Menu ------------- */
-
-const currentPageIdSelector = (s: TDSnapshot) => s.appState.currentPageId
-const documentPagesSelector = (s: TDSnapshot) => s.document.pages
-
-function MoveToPageMenu(): JSX.Element | null {
-  const app = useTldrawApp()
-  const currentPageId = app.useStore(currentPageIdSelector)
-  const documentPages = app.useStore(documentPagesSelector)
-
-  const sorted = Object.values(documentPages)
-    .sort((a, b) => (a.childIndex || 0) - (b.childIndex || 0))
-    .filter((a) => a.id !== currentPageId)
-
-  if (sorted.length === 0) return null
-
-  return (
-    <RadixContextMenu.Root dir="ltr">
-      <CMTriggerButton isSubmenu>Move To Page</CMTriggerButton>
-      <RadixContextMenu.Content dir="ltr" sideOffset={2} alignOffset={-2} asChild>
-        <MenuContent>
-          {sorted.map(({ id, name }, i) => (
-            <CMRowButton
-              key={id}
-              disabled={id === currentPageId}
-              onClick={() => app.moveToPage(id)}
-            >
-              {name || `Page ${i}`}
-            </CMRowButton>
-          ))}
-          <CMArrow offset={13} />
-        </MenuContent>
-      </RadixContextMenu.Content>
-    </RadixContextMenu.Root>
-  )
-}
 
 /* --------------------- Submenu -------------------- */
 
