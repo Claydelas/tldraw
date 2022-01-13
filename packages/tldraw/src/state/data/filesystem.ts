@@ -3,6 +3,8 @@ import { fileSave, fileOpen, FileSystemHandle } from './browser-fs-access'
 import { get as getFromIdb, set as setToIdb } from 'idb-keyval'
 import { IMAGE_EXTENSIONS, VIDEO_EXTENSIONS } from '~constants'
 
+import { compress, decompress } from 'lz-string'
+
 const options = { mode: 'readwrite' as const }
 
 const checkPermissions = async (handle: FileSystemHandle) => {
@@ -33,7 +35,7 @@ export async function saveToFileSystem(document: TDDocument, fileHandle: FileSys
   }
 
   // Serialize to JSON
-  const json = JSON.stringify(file, null, 2)
+  const json = compress(JSON.stringify(file))
 
   // Create blob
   const blob = new Blob([json], {
@@ -62,6 +64,17 @@ export async function saveToFileSystem(document: TDDocument, fileHandle: FileSys
   return newFileHandle
 }
 
+export function docToString(document: TDDocument) {
+  const file: TDFile = {
+    name: document.name || 'New Document',
+    fileHandle: null,
+    document,
+    assets: {},
+  }
+
+  return compress(JSON.stringify(file))
+}
+
 export async function openFromFileSystem(): Promise<null | {
   fileHandle: FileSystemHandle | null
   document: TDDocument
@@ -87,7 +100,7 @@ export async function openFromFileSystem(): Promise<null | {
   })
 
   // Parse
-  const file: TDFile = JSON.parse(json)
+  const file: TDFile = JSON.parse(decompress(json) ?? '')
 
   const fileHandle = blob.handle ?? null
 
@@ -97,6 +110,10 @@ export async function openFromFileSystem(): Promise<null | {
     fileHandle,
     document: file.document,
   }
+}
+
+export function openFromString(docAsString: string): TDDocument {
+  return JSON.parse(decompress(docAsString) ?? '').document
 }
 
 export async function openAssetFromFileSystem() {

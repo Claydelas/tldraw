@@ -44,9 +44,11 @@ import {
   loadFileHandle,
   openFromFileSystem,
   saveToFileSystem,
+  docToString,
   openAssetFromFileSystem,
   fileToBase64,
   getSizeFromDataurl,
+  openFromString,
 } from './data'
 import { TLDR } from './TLDR'
 import { shapeUtils } from '~state/shapes'
@@ -1331,6 +1333,20 @@ export class TldrawApp extends StateManager<TDSnapshot> {
     this.resetDocument()
   }
 
+  saveToString = () => {
+    if (this.readOnly) return
+    try {
+      const json = docToString(migrate(this.document, TldrawApp.version))
+      this.persist()
+      this.isDirty = false
+      return json
+    } catch (e: any) {
+      // Likely cancelled
+      console.error(e.message)
+      return ''
+    }
+  }
+
   /**
    * Save the current project.
    */
@@ -1384,6 +1400,19 @@ export class TldrawApp extends StateManager<TDSnapshot> {
       this.loadDocument(document)
       this.fileSystemHandle = fileHandle
       this.zoomToFit()
+      this.persist()
+    } catch (e) {
+      console.error(e)
+    } finally {
+      this.persist()
+    }
+  }
+
+  openProjectString = (docAsString: string) => {
+    if (!this.isLocal) return
+    try {
+      const document = openFromString(docAsString)
+      this.loadDocument(document)
       this.persist()
     } catch (e) {
       console.error(e)
