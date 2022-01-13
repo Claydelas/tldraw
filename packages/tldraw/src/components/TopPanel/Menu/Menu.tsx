@@ -70,7 +70,8 @@ export const Menu = React.memo(function Menu({ readOnly }: MenuProps) {
     app.callbacks.onNewProject ||
     app.callbacks.onOpenProject ||
     app.callbacks.onSaveProject ||
-    app.callbacks.onSaveProjectAs
+    app.callbacks.onSaveProjectAs ||
+    !disableAssets
 
   const hasSelection = numberOfSelectedIds > 0
 
