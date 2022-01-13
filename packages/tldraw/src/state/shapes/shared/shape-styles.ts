@@ -85,16 +85,16 @@ const fontSizes = {
 
 const fontFaces = {
   [FontStyle.Script]: '"Caveat Brush"',
+  [FontStyle.Script2]: '"Reenie Beanie"',
   [FontStyle.Sans]: '"Source Sans Pro", sans-serif',
   [FontStyle.Serif]: '"Crimson Pro", serif',
-  [FontStyle.Mono]: '"Source Code Pro", monospace',
 }
 
 const fontSizeModifiers = {
   [FontStyle.Script]: 1,
+  [FontStyle.Script2]: 1,
   [FontStyle.Sans]: 1,
   [FontStyle.Serif]: 1,
-  [FontStyle.Mono]: 1,
 }
 
 const stickyFontSizes = {

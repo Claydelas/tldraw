@@ -19,13 +19,7 @@ interface TopPanelProps {
   showSponsorLink: boolean
 }
 
-export function TopPanel({
-  readOnly,
-  showPages,
-  showMenu,
-  showStyles,
-  showZoom,
-}: TopPanelProps) {
+export function TopPanel({ readOnly, showPages, showMenu, showStyles, showZoom }: TopPanelProps) {
   const app = useTldrawApp()
 
   return (
@@ -40,14 +34,14 @@ export function TopPanel({
       {(showStyles || showZoom) && (
         <Panel side="right">
           {showStyles && !readOnly && <StyleMenu />}
-          <MobileOnly bp={breakpoints}>
+          <FlexRow>
             <ToolButton>
-              <UndoIcon onClick={app.undo} />
+              <UndoIcon fill={app.canUndo ? 'currentColor' : 'gray'} onClick={app.undo} />
             </ToolButton>
             <ToolButton>
-              <RedoIcon onClick={app.redo} />
+              <RedoIcon fill={app.canRedo ? 'currentColor' : 'gray'} onClick={app.redo} />
             </ToolButton>
-          </MobileOnly>
+          </FlexRow>
           {showZoom && <ZoomMenu />}
         </Panel>
       )}
@@ -87,4 +81,9 @@ const MobileOnly = styled('div', {
       },
     },
   },
+})
+
+const FlexRow = styled('div', {
+  display: 'flex',
+  flexDirection: 'row',
 })

@@ -363,14 +363,14 @@ const FontIcon = styled('div', {
       [FontStyle.Script]: {
         fontFamily: 'Caveat Brush',
       },
+      [FontStyle.Script2]: {
+        fontFamily: 'Reenie Beanie',
+      },
       [FontStyle.Sans]: {
         fontFamily: 'Recursive',
       },
       [FontStyle.Serif]: {
         fontFamily: 'Georgia',
-      },
-      [FontStyle.Mono]: {
-        fontFamily: 'Recursive Mono',
       },
     },
   },

@@ -438,9 +438,9 @@ export enum AlignStyle {
 
 export enum FontStyle {
   Script = 'script',
+  Script2 = 'script2',
   Sans = 'sans',
   Serif = 'erif',
-  Mono = 'mono',
 }
 
 export type ShapeStyles = {

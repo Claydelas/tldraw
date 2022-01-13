@@ -6,7 +6,7 @@ export function UndoIcon(props: React.SVGProps<SVGSVGElement>): JSX.Element {
       width={32}
       height={32}
       viewBox="0 0 15 15"
-      fill="currentColor"
+      fill={props.fill ?? "currentColor"}
       xmlns="http://www.w3.org/2000/svg"
       {...props}
     >
