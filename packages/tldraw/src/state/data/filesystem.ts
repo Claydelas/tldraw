@@ -1,5 +1,6 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 import type { TDDocument, TDFile } from '~types'
-import { fileSave, fileOpen, FileSystemHandle } from './browser-fs-access'
+import type { FileSystemHandle } from './browser-fs-access'
 import { get as getFromIdb, set as setToIdb } from 'idb-keyval'
 import { IMAGE_EXTENSIONS, VIDEO_EXTENSIONS } from '~constants'
 
@@ -48,6 +49,9 @@ export async function saveToFileSystem(document: TDDocument, fileHandle: FileSys
   }
 
   // Save to file system
+  // @ts-ignore
+  const browserFS = await import('./browser-fs-access')
+  const fileSave = browserFS.fileSave
   const newFileHandle = await fileSave(
     blob,
     {
@@ -80,6 +84,9 @@ export async function openFromFileSystem(): Promise<null | {
   document: TDDocument
 }> {
   // Get the blob
+  // @ts-ignore
+  const browserFS = await import('./browser-fs-access')
+  const fileOpen = browserFS.fileOpen
   const blob = await fileOpen({
     description: 'Tldraw File',
     extensions: [`.tldr`],
@@ -117,6 +124,9 @@ export function openFromString(docAsString: string): TDDocument {
 }
 
 export async function openAssetFromFileSystem() {
+  // @ts-ignore
+  const browserFS = await import('./browser-fs-access')
+  const fileOpen = browserFS.fileOpen
   return fileOpen({
     description: 'Image or Video',
     extensions: [...IMAGE_EXTENSIONS, ...VIDEO_EXTENSIONS],
@@ -136,10 +146,11 @@ export function fileToBase64(file: Blob): Promise<string | ArrayBuffer | null> {
   })
 }
 
-export function getSizeFromDataurl(dataURL: string): Promise<number[]> {
-  return new Promise((resolve) => {
+export function getSizeFromSrc(src: string): Promise<number[]> {
+  return new Promise((resolve, reject) => {
     const img = new Image()
     img.onload = () => resolve([img.width, img.height])
-    img.src = dataURL
+    img.onerror = () => reject(new Error('Could not get image size'))
+    img.src = src
   })
 }

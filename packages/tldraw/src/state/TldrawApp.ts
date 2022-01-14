@@ -37,6 +37,10 @@ import {
   TDToolType,
   TDAssetType,
   TDAsset,
+  TDExportTypes,
+  TDAssets,
+  TDExport,
+  ImageShape,
 } from '~types'
 import {
   migrate,
@@ -47,15 +51,14 @@ import {
   docToString,
   openAssetFromFileSystem,
   fileToBase64,
-  getSizeFromDataurl,
   openFromString,
+  getSizeFromSrc,
 } from './data'
 import { TLDR } from './TLDR'
 import { shapeUtils } from '~state/shapes'
 import { defaultStyle } from '~state/shapes/shared/shape-styles'
 import * as Commands from './commands'
 import { SessionArgsOfType, getSession, TldrawSession } from './sessions'
-import type { BaseTool } from './tools/BaseTool'
 import {
   USER_COLORS,
   FIT_TO_SCREEN_PADDING,
@@ -64,6 +67,7 @@ import {
   VIDEO_EXTENSIONS,
   SVG_EXPORT_PADDING,
 } from '~constants'
+import type { BaseTool } from './tools/BaseTool'
 import { SelectTool } from './tools/SelectTool'
 import { EraseTool } from './tools/EraseTool'
 import { TextTool } from './tools/TextTool'
@@ -140,15 +144,25 @@ export interface TDCallbacks {
   onChangePage?: (
     app: TldrawApp,
     shapes: Record<string, TDShape | undefined>,
-    bindings: Record<string, TDBinding | undefined>
+    bindings: Record<string, TDBinding | undefined>,
+    assets: Record<string, TDAsset | undefined>
   ) => void
   /**
    * (optional) A callback to run when the user creates a new project.
    */
   onChangePresence?: (state: TldrawApp, user: TDUser) => void
-
-  onImageDelete?: (id: string) => void
-  onImageCreate?: (file: File, id: string) => Promise<string>
+  /**
+   * (optional) A callback to run when an asset will be deleted.
+   */
+  onAssetDelete?: (assetId: string) => void
+  /**
+   * (optional) A callback to run when an asset will be created. Should return the value for the image/video's `src` property.
+   */
+  onAssetCreate?: (file: File, id: string) => Promise<string | false>
+  /**
+   * (optional) A callback to run when the user exports their page or selection.
+   */
+  onExport?: (info: TDExport) => Promise<void>
 }
 
 export class TldrawApp extends StateManager<TDSnapshot> {
@@ -287,8 +301,6 @@ export class TldrawApp extends StateManager<TDSnapshot> {
   protected cleanup = (state: TDSnapshot, prev: TDSnapshot): TDSnapshot => {
     const next = { ...state }
 
-    const assetIdsInUse = new Set<string>([])
-
     // Remove deleted shapes and bindings (in Commands, these will be set to undefined)
     if (next.document !== prev.document) {
       Object.entries(next.document.pages).forEach(([pageId, page]) => {
@@ -317,7 +329,6 @@ export class TldrawApp extends StateManager<TDSnapshot> {
               parentId = prevPage?.shapes[id]?.parentId
               delete page.shapes[id]
             } else {
-              if (shape.assetId) assetIdsInUse.add(shape.assetId)
               parentId = shape.parentId
             }
 
@@ -435,6 +446,13 @@ export class TldrawApp extends StateManager<TDSnapshot> {
     }
 
     // Cleanup assets
+    if (!('assets' in next.document)) next.document.assets = {}
+
+    Object.keys(next.document.assets).forEach((id) => {
+      if (!next.document.assets[id]) {
+        delete next.document.assets[id]
+      }
+    })
 
     const currentPageId = next.appState.currentPageId
 
@@ -532,12 +550,14 @@ export class TldrawApp extends StateManager<TDSnapshot> {
   private justSent = false
   private prevShapes = this.page.shapes
   private prevBindings = this.page.bindings
+  private prevAssets = this.document.assets
 
   private broadcastPageChanges = () => {
     const visited = new Set<string>()
 
     const changedShapes: Record<string, TDShape | undefined> = {}
     const changedBindings: Record<string, TDBinding | undefined> = {}
+    const changedAssets: Record<string, TDAsset | undefined> = {}
 
     this.shapes.forEach((shape) => {
       visited.add(shape.id)
@@ -569,12 +589,30 @@ export class TldrawApp extends StateManager<TDSnapshot> {
         changedBindings[id] = undefined
       })
 
+    this.assets.forEach((asset) => {
+      visited.add(asset.id)
+      if (this.prevAssets[asset.id] !== asset) {
+        changedAssets[asset.id] = asset
+      }
+    })
+
+    Object.keys(this.prevAssets)
+      .filter((id) => !visited.has(id))
+      .forEach((id) => {
+        changedAssets[id] = undefined
+      })
+
     // Only trigger update if shapes or bindings have changed
-    if (Object.keys(changedBindings).length > 0 || Object.keys(changedShapes).length > 0) {
+    if (
+      Object.keys(changedBindings).length > 0 ||
+      Object.keys(changedShapes).length > 0 ||
+      Object.keys(changedAssets).length > 0
+    ) {
       this.justSent = true
-      this.callbacks.onChangePage?.(this, changedShapes, changedBindings)
+      this.callbacks.onChangePage?.(this, changedShapes, changedBindings, changedAssets)
       this.prevShapes = this.page.shapes
       this.prevBindings = this.page.bindings
+      this.prevAssets = this.document.assets
     }
   }
 
@@ -639,6 +677,7 @@ export class TldrawApp extends StateManager<TDSnapshot> {
   public replacePageContent = (
     shapes: Record<string, TDShape>,
     bindings: Record<string, TDBinding>,
+    assets: Record<string, TDAsset>,
     pageId = this.currentPageId
   ): this => {
     if (this.justSent) {
@@ -699,6 +738,7 @@ export class TldrawApp extends StateManager<TDSnapshot> {
       // were deleted on the server.
       this.prevShapes = shapes
       this.prevBindings = bindings
+      this.prevAssets = assets
 
       const nextShapes = {
         ...shapes,
@@ -708,6 +748,9 @@ export class TldrawApp extends StateManager<TDSnapshot> {
       const nextBindings = {
         ...bindings,
         ...reservedBindings,
+      }
+      const nextAssets = {
+        ...assets,
       }
 
       const next: TDSnapshot = {
@@ -721,6 +764,7 @@ export class TldrawApp extends StateManager<TDSnapshot> {
               bindings: nextBindings,
             },
           },
+          assets: nextAssets,
           pageStates: {
             ...current.document.pageStates,
             [pageId]: {
@@ -1310,9 +1354,13 @@ export class TldrawApp extends StateManager<TDSnapshot> {
     this.replaceState(
       {
         ...TldrawApp.defaultState,
+        settings: {
+          ...this.state.settings,
+        },
         document: migrate(document, TldrawApp.version),
         appState: {
           ...TldrawApp.defaultState.appState,
+          ...this.state.appState,
           currentPageId: Object.keys(document.pages)[0],
           disableAssets: this.disableAssets,
         },
@@ -1588,6 +1636,13 @@ export class TldrawApp extends StateManager<TDSnapshot> {
   }
 
   /**
+   * The document's assets (as an array).
+   */
+  get assets(): TDAsset[] {
+    return Object.values(this.document.assets)
+  }
+
+  /**
    * The current page's state.
    */
   get pageState(): TLPageState {
@@ -1675,6 +1730,7 @@ export class TldrawApp extends StateManager<TDSnapshot> {
     const copyingAssets = copyingShapes
       .map((shape) => {
         if (!shape.assetId) return
+
         return this.document.assets[shape.assetId]
       })
       .filter(Boolean) as TDAsset[]
@@ -1864,9 +1920,12 @@ export class TldrawApp extends StateManager<TDSnapshot> {
       const bounds = util.getBounds(shape)
       const elm = util.getSvgElement(shape)
       if (!elm) return
+
       // If the element is an image, set the asset src as the xlinkhref
       if (shape.type === TDShapeType.Image) {
         elm.setAttribute('xlink:href', this.document.assets[shape.assetId].src)
+      } else if (shape.type === TDShapeType.Video) {
+        elm.setAttribute('xlink:href', this.serializeVideo(shape.id))
       }
       // Put the element in the correct position relative to the common bounds
       elm.setAttribute(
@@ -2035,29 +2094,22 @@ export class TldrawApp extends StateManager<TDSnapshot> {
    * Zoom to fit the page's shapes.
    */
   zoomToFit = (): this => {
-    const shapes = this.shapes
-
+    const {
+      shapes,
+      pageState: { camera },
+    } = this
     if (shapes.length === 0) return this
-
     const { rendererBounds } = this
-
     const commonBounds = Utils.getCommonBounds(shapes.map(TLDR.getBounds))
-
     let zoom = TLDR.getCameraZoom(
       Math.min(
         (rendererBounds.width - FIT_TO_SCREEN_PADDING) / commonBounds.width,
         (rendererBounds.height - FIT_TO_SCREEN_PADDING) / commonBounds.height
       )
     )
-
-    zoom =
-      this.pageState.camera.zoom === zoom || this.pageState.camera.zoom < 1
-        ? Math.min(1, zoom)
-        : zoom
-
+    zoom = camera.zoom === zoom || camera.zoom < 1 ? Math.min(1, zoom) : zoom
     const mx = (rendererBounds.width - commonBounds.width * zoom) / 2 / zoom
     const my = (rendererBounds.height - commonBounds.height * zoom) / 2 / zoom
-
     return this.setCamera(
       Vec.toFixed(Vec.sub([mx, my], [commonBounds.minX, commonBounds.minY])),
       zoom,
@@ -2559,14 +2611,6 @@ export class TldrawApp extends StateManager<TDSnapshot> {
    * @command
    */
   delete = (ids = this.selectedIds): this => {
-    if (this.callbacks.onImageDelete) {
-      ids.forEach((id) => {
-        const node = this.getShape(id)
-        if (node.type === TDShapeType.Image || node.type === TDShapeType.Video)
-          this.callbacks.onImageDelete!(id)
-      })
-    }
-
     if (ids.length === 0) return this
     return this.setState(Commands.deleteShapes(this, ids))
   }
@@ -2840,34 +2884,46 @@ export class TldrawApp extends StateManager<TDSnapshot> {
   private addMediaFromFile = async (file: File, point = this.centerPoint) => {
     this.setIsLoading(true)
     const id = Utils.uniqueId()
+    const pagePoint = this.getPagePoint(point)
+    const extension = file.name.match(/\.[0-9a-z]+$/i)
+    if (!extension) throw Error('No extension')
+    const isImage = IMAGE_EXTENSIONS.includes(extension[0].toLowerCase())
+    const isVideo = VIDEO_EXTENSIONS.includes(extension[0].toLowerCase())
+    if (!(isImage || isVideo)) throw Error('Wrong extension')
+    const shapeType = isImage ? TDShapeType.Image : TDShapeType.Video
+    const assetType = isImage ? TDAssetType.Image : TDAssetType.Video
+    let src: string | ArrayBuffer | null
+
     try {
-      let dataurl: string | ArrayBuffer | null
-      if (this.callbacks.onImageCreate) dataurl = await this.callbacks.onImageCreate(file, id)
-      else dataurl = await fileToBase64(file)
-      if (typeof dataurl === 'string') {
-        const extension = file.name.match(/\.[0-9a-z]+$/i)
-        if (!extension) throw Error('No extension')
-        const isImage = IMAGE_EXTENSIONS.includes(extension[0].toLowerCase())
-        const isVideo = VIDEO_EXTENSIONS.includes(extension[0].toLowerCase())
-        if (!(isImage || isVideo)) throw Error('Wrong extension')
-        let assetId = Utils.uniqueId()
-        const pagePoint = this.getPagePoint(point)
-        const shapeType = isImage ? TDShapeType.Image : TDShapeType.Video
-        const assetType = isImage ? TDAssetType.Image : TDAssetType.Video
-        const size = isImage ? await getSizeFromDataurl(dataurl) : [401.42, 401.42] // special
+      if (this.callbacks.onAssetCreate) {
+        const result = await this.callbacks.onAssetCreate(file, id)
+        if (!result) throw Error('Asset creation callback returned false')
+        src = result
+      } else {
+        src = await fileToBase64(file)
+      }
+      if (typeof src === 'string') {
+        const size = isImage
+          ? await getSizeFromSrc(src).catch((e) => {
+              throw e
+            })
+          : [401.42, 401.42] // special
         const match = Object.values(this.document.assets).find(
-          (asset) => asset.type === assetType && asset.src === dataurl
+          (asset) => asset.type === assetType && asset.src === src
         )
+        let assetId: string
         if (!match) {
+          assetId = Utils.uniqueId()
+          const asset = {
+            id: assetId,
+            type: assetType,
+            src,
+            size,
+          }
           this.patchState({
             document: {
               assets: {
-                [assetId]: {
-                  id: assetId,
-                  type: assetType,
-                  src: dataurl,
-                  size,
-                },
+                [assetId]: asset,
               },
             },
           })
@@ -2875,10 +2931,11 @@ export class TldrawApp extends StateManager<TDSnapshot> {
         this.createImageOrVideoShapeAtPoint(id, shapeType, pagePoint, size, assetId)
       }
     } catch (error) {
-      console.error(error)
+      console.warn(error)
       this.setIsLoading(false)
       return this
     }
+
     this.setIsLoading(false)
     return this
   }
@@ -3367,6 +3424,100 @@ export class TldrawApp extends StateManager<TDSnapshot> {
 
   isSelected(id: string) {
     return this.selectedIds.includes(id)
+  }
+
+  /* ----------------- Export ----------------- */
+
+  /**
+   * Get a snapshot of a video at current frame as base64 encoded image
+   * @param id ID of video shape
+   * @returns base64 encoded frame
+   * @throws Error if video shape with given ID does not exist
+   */
+  serializeVideo(id: string): string {
+    const video = document.getElementById(id + '_video') as HTMLVideoElement
+    if (video) {
+      const canvas = document.createElement('canvas')
+      canvas.width = video.videoWidth
+      canvas.height = video.videoHeight
+      const canvasContext = canvas.getContext('2d')!
+      canvasContext.drawImage(video, 0, 0)
+      return canvas.toDataURL('image/png')
+    } else throw new Error('Video with id ' + id + ' not found')
+  }
+
+  patchAssets(assets: TDAssets) {
+    this.document.assets = {
+      ...this.document.assets,
+      ...assets,
+    }
+  }
+
+  async exportAllShapesAs(type: TDExportTypes) {
+    const initialSelectedIds = [...this.selectedIds]
+    this.selectAll()
+    const { width, height } = Utils.expandBounds(TLDR.getSelectedBounds(this.state), 64)
+    const allIds = [...this.selectedIds]
+    this.setSelectedIds(initialSelectedIds)
+    await this.exportShapesAs(allIds, [width, height], type)
+  }
+
+  async exportSelectedShapesAs(type: TDExportTypes) {
+    const { width, height } = Utils.expandBounds(TLDR.getSelectedBounds(this.state), 64)
+    await this.exportShapesAs(this.selectedIds, [width, height], type)
+  }
+
+  async exportShapesAs(shapeIds: string[], size: number[], type: TDExportTypes) {
+    this.setIsLoading(true)
+    const assets: TDAssets = {}
+    let shapes = shapeIds.map((id) => ({ ...this.getShape(id) }))
+
+    // Patch asset table. Replace videos with serialized snapshots
+    shapes.forEach((s, i) => {
+      if (s.assetId) {
+        assets[s.assetId] = { ...this.document.assets[s.assetId] }
+        if (s.type === TDShapeType.Video) {
+          assets[s.assetId].src = this.serializeVideo(s.id)
+          assets[s.assetId].type = TDAssetType.Image
+        }
+      }
+    })
+
+    // Cast exported video shapes to image shapes to properly display snapshots
+    shapes = shapes.map((s) => {
+      if (s.type === TDShapeType.Video) {
+        const shape = s as TDShape
+        shape.type = TDShapeType.Image
+        return shape as ImageShape
+      } else return s
+    })
+
+    let serializedExport
+    if (type == TDExportTypes.SVG) {
+      serializedExport = this.copySvg(shapeIds)
+    } else if (type == TDExportTypes.JSON) {
+      serializedExport = this.copyJson(shapeIds)
+    }
+
+    const exportInfo: TDExport = {
+      name: this.page.name ?? 'export',
+      shapes: shapes,
+      assets: assets,
+      type,
+      size: type === 'png' ? Vec.mul(size, 2) : size,
+      serialized: serializedExport,
+    }
+
+    if (this.callbacks.onExport) {
+      try {
+        this.setIsLoading(true)
+        await this.callbacks.onExport?.(exportInfo)
+      } catch (error) {
+        console.error(error)
+      } finally {
+        this.setIsLoading(false)
+      }
+    }
   }
 
   get room() {

@@ -36,10 +36,11 @@ export function useShapeEvents(id: string) {
         callbacks.onPointerDown?.(info, e)
       },
       onPointerUp: (e: React.PointerEvent) => {
+        if ((e as any).dead) return
+        else (e as any).dead = true
         if (e.button !== 0) return
         inputs.activePointer = undefined
         if (!inputs.pointerIsValid(e)) return
-        e.stopPropagation()
         const isDoubleClick = inputs.isDoubleClick()
         const info = inputs.pointerUp(e, id)
         if (e.currentTarget.hasPointerCapture(e.pointerId)) {
@@ -52,8 +53,9 @@ export function useShapeEvents(id: string) {
         callbacks.onPointerUp?.(info, e)
       },
       onPointerMove: (e: React.PointerEvent) => {
+        if ((e as any).dead) return
+        else (e as any).dead = true
         if (!inputs.pointerIsValid(e)) return
-        e.stopPropagation()
         if (inputs.pointer && e.pointerId !== inputs.pointer.pointerId) return
         const info = inputs.pointerMove(e, id)
         if (e.currentTarget.hasPointerCapture(e.pointerId)) {

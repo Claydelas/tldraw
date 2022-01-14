@@ -20,6 +20,8 @@ export function useCanvasEvents() {
         }
       },
       onPointerMove: (e: React.PointerEvent) => {
+        if ((e as any).dead) return
+        else (e as any).dead = true
         if (!inputs.pointerIsValid(e)) return
         const info = inputs.pointerMove(e, 'canvas')
         if (e.currentTarget.hasPointerCapture(e.pointerId)) {
@@ -28,6 +30,8 @@ export function useCanvasEvents() {
         callbacks.onPointerMove?.(info, e)
       },
       onPointerUp: (e: React.PointerEvent) => {
+        if ((e as any).dead) return
+        else (e as any).dead = true
         if (e.button !== 0 && e.button !== 1) return
         inputs.activePointer = undefined
         if (!inputs.pointerIsValid(e)) return

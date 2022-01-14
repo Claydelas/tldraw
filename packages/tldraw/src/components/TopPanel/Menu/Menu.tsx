@@ -12,7 +12,7 @@ import {
 } from '~components/Primitives/DropdownMenu'
 import { useFileSystemHandlers } from '~hooks'
 import { preventEvent } from '~components/preventEvent'
-import type { TDSnapshot } from '~types'
+import { TDExportTypes, TDSnapshot } from '~types'
 import { Divider } from '~components/Primitives/Divider'
 
 interface MenuProps {
@@ -29,10 +29,48 @@ const disableAssetsSelector = (s: TDSnapshot) => {
 
 export const Menu = React.memo(function Menu({ readOnly }: MenuProps) {
   const app = useTldrawApp()
+
   const numberOfSelectedIds = app.useStore(numberOfSelectedIdsSelector)
+
   const disableAssets = app.useStore(disableAssetsSelector)
 
-  const { onSaveProject } = useFileSystemHandlers()
+  const [_, setForce] = React.useState(0)
+
+  React.useEffect(() => setForce(1), [])
+
+  const { onNewProject, onOpenProject, onSaveProject, onSaveProjectAs } = useFileSystemHandlers()
+
+  const handleExportPNG = React.useCallback(async () => {
+    await app.exportAllShapesAs(TDExportTypes.PNG)
+  }, [app])
+
+  const handleExportJPG = React.useCallback(async () => {
+    await app.exportAllShapesAs(TDExportTypes.JPG)
+  }, [app])
+
+  const handleExportWEBP = React.useCallback(async () => {
+    await app.exportAllShapesAs(TDExportTypes.WEBP)
+  }, [app])
+
+  const handleExportPDF = React.useCallback(async () => {
+    await app.exportAllShapesAs(TDExportTypes.PDF)
+  }, [app])
+
+  const handleExportSVG = React.useCallback(async () => {
+    await app.exportAllShapesAs(TDExportTypes.SVG)
+  }, [app])
+
+  const handleExportJSON = React.useCallback(async () => {
+    await app.exportAllShapesAs(TDExportTypes.JSON)
+  }, [app])
+
+  const handleSignIn = React.useCallback(() => {
+    app.callbacks.onSignIn?.(app)
+  }, [app])
+
+  const handleSignOut = React.useCallback(() => {
+    app.callbacks.onSignOut?.(app)
+  }, [app])
 
   const handleCut = React.useCallback(() => {
     app.cut()
@@ -71,7 +109,9 @@ export const Menu = React.memo(function Menu({ readOnly }: MenuProps) {
     app.callbacks.onOpenProject ||
     app.callbacks.onSaveProject ||
     app.callbacks.onSaveProjectAs ||
-    !disableAssets
+    !disableAssets ||
+    app.callbacks.onExport
+
 
   const hasSelection = numberOfSelectedIds > 0
 
@@ -87,6 +127,23 @@ export const Menu = React.memo(function Menu({ readOnly }: MenuProps) {
               <DMItem onClick={onSaveProject} kbd="#S">
                 Save
               </DMItem>
+            )}
+            {app.callbacks.onSaveProjectAs && (
+              <DMItem onClick={onSaveProjectAs} kbd="#⇧S">
+                Save As...
+              </DMItem>
+            )}
+            {app.callbacks.onExport && (
+              <>
+                <Divider />
+                <DMSubMenu label="Export" size="small">
+                  <DMItem onClick={handleExportPNG}>PNG</DMItem>
+                  <DMItem onClick={handleExportJPG}>JPG</DMItem>
+                  <DMItem onClick={handleExportWEBP}>WEBP</DMItem>
+                  <DMItem onClick={handleExportSVG}>SVG</DMItem>
+                  <DMItem onClick={handleExportJSON}>JSON</DMItem>
+                </DMSubMenu>
+              </>
             )}
             {!disableAssets && (
               <>

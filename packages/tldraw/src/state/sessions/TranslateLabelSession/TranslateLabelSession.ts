@@ -1,7 +1,5 @@
-import { Vec } from '@tldraw/vec'
 import {
   SessionType,
-  ShapesWithProp,
   TldrawCommand,
   TldrawPatch,
   TDStatus,
@@ -24,7 +22,9 @@ export class TranslateLabelSession extends BaseSession {
 
   constructor(app: TldrawApp, shapeId: string) {
     super(app)
-    this.initialShape = this.app.getShape(shapeId)
+    this.initialShape = this.app.getShape<
+      RectangleShape | TriangleShape | EllipseShape | ArrowShape
+    >(shapeId)
     this.initialShapeBounds = this.app.getShapeBounds(shapeId)
   }
 
@@ -44,7 +44,7 @@ export class TranslateLabelSession extends BaseSession {
     // First update the handle's next point
     const change = {
       handlePoint: newHandlePoint,
-    } as Partial<typeof this.initialShape>
+    } as Partial<RectangleShape | TriangleShape | EllipseShape | ArrowShape>
 
     return {
       document: {

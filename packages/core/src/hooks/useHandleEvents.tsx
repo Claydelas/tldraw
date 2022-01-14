@@ -18,9 +18,10 @@ export function useHandleEvents(id: string) {
         callbacks.onPointerDown?.(info, e)
       },
       onPointerUp: (e: React.PointerEvent) => {
+        if ((e as any).dead) return
+        else (e as any).dead = true
         if (e.button !== 0) return
         if (!inputs.pointerIsValid(e)) return
-        e.stopPropagation()
         const isDoubleClick = inputs.isDoubleClick()
         const info = inputs.pointerUp(e, id)
         if (e.currentTarget.hasPointerCapture(e.pointerId)) {
@@ -33,8 +34,9 @@ export function useHandleEvents(id: string) {
         callbacks.onPointerUp?.(info, e)
       },
       onPointerMove: (e: React.PointerEvent) => {
+        if ((e as any).dead) return
+        else (e as any).dead = true
         if (!inputs.pointerIsValid(e)) return
-        e.stopPropagation()
         const info = inputs.pointerMove(e, id)
         if (e.currentTarget.hasPointerCapture(e.pointerId)) {
           callbacks.onDragHandle?.(info, e)
