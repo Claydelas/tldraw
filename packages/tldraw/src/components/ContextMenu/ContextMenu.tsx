@@ -38,10 +38,12 @@ const preventDefault = (e: Event) => e.stopPropagation()
 
 interface ContextMenuProps {
   onBlur?: React.FocusEventHandler
+  readOnly: boolean
   children: React.ReactNode
 }
 
-export const ContextMenu = ({ onBlur, children }: ContextMenuProps): JSX.Element => {
+export const ContextMenu = ({ onBlur, readOnly, children }: ContextMenuProps): JSX.Element => {
+  if (readOnly) return <>{children}</>
   return (
     <RadixContextMenu.Root dir="ltr">
       <RadixContextMenu.Trigger dir="ltr">{children}</RadixContextMenu.Trigger>

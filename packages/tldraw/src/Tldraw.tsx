@@ -445,7 +445,7 @@ const InnerTldraw = React.memo(function InnerTldraw({
     <StyledLayout ref={rWrapper} tabIndex={-0} className={settings.isDarkMode ? dark : ''}>
       <Loading />
       <OneOff focusableRef={rWrapper} autofocus={autofocus} />
-      <ContextMenu>
+      <ContextMenu readOnly={readOnly}>
         <Renderer
           id={id}
           containerRef={rWrapper}
@@ -459,10 +459,10 @@ const InnerTldraw = React.memo(function InnerTldraw({
           userId={room?.userId}
           theme={theme}
           meta={meta}
-          hideBounds={hideBounds}
-          hideHandles={hideHandles}
-          hideResizeHandles={isHideResizeHandlesShape}
-          hideIndicators={hideIndicators}
+          hideBounds={readOnly || hideBounds}
+          hideHandles={readOnly || hideHandles}
+          hideResizeHandles={readOnly || isHideResizeHandlesShape}
+          hideIndicators={readOnly || hideIndicators}
           hideBindingHandles={!settings.showBindingHandles}
           hideCloneHandles={hideCloneHandles}
           hideRotateHandles={!settings.showRotateHandles}

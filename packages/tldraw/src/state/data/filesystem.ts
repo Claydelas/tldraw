@@ -4,7 +4,7 @@ import type { FileSystemHandle } from './browser-fs-access'
 import { get as getFromIdb, set as setToIdb } from 'idb-keyval'
 import { IMAGE_EXTENSIONS, VIDEO_EXTENSIONS } from '~constants'
 
-import { compress, decompress } from 'lz-string'
+import { compressToUTF16, decompressFromUTF16 } from 'lz-string'
 
 const options = { mode: 'readwrite' as const }
 
@@ -36,7 +36,7 @@ export async function saveToFileSystem(document: TDDocument, fileHandle: FileSys
   }
 
   // Serialize to JSON
-  const json = compress(JSON.stringify(file))
+  const json = compressToUTF16(JSON.stringify(file))
 
   // Create blob
   const blob = new Blob([json], {
@@ -76,7 +76,7 @@ export function docToString(document: TDDocument) {
     assets: {},
   }
 
-  return compress(JSON.stringify(file))
+  return compressToUTF16(JSON.stringify(file))
 }
 
 export async function openFromFileSystem(): Promise<null | {
@@ -107,7 +107,7 @@ export async function openFromFileSystem(): Promise<null | {
   })
 
   // Parse
-  const file: TDFile = JSON.parse(decompress(json) ?? '')
+  const file: TDFile = JSON.parse(decompressFromUTF16(json) ?? '')
 
   const fileHandle = blob.handle ?? null
 
@@ -120,7 +120,7 @@ export async function openFromFileSystem(): Promise<null | {
 }
 
 export function openFromString(docAsString: string): TDFile {
-  return JSON.parse(decompress(docAsString) ?? '')
+  return JSON.parse(decompressFromUTF16(docAsString) ?? '')
 }
 
 export async function openAssetFromFileSystem() {
