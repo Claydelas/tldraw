@@ -119,8 +119,8 @@ export async function openFromFileSystem(): Promise<null | {
   }
 }
 
-export function openFromString(docAsString: string): TDDocument {
-  return JSON.parse(decompress(docAsString) ?? '').document
+export function openFromString(docAsString: string): TDFile {
+  return JSON.parse(decompress(docAsString) ?? '')
 }
 
 export async function openAssetFromFileSystem() {
