@@ -182,5 +182,5 @@ export const defaultStyle: ShapeStyles = {
 export const defaultTextStyle: ShapeStyles = {
   ...defaultStyle,
   font: FontStyle.Script,
-  textAlign: AlignStyle.Middle,
+  textAlign: AlignStyle.Start,
 }
